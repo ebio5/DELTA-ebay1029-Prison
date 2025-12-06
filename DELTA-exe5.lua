@@ -10,10 +10,12 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
+-- タブ作成
 local AIMTab = Window:CreateTab("AIMBOT")
 local ESPTab = Window:CreateTab("ESP")
 local TPTab = Window:CreateTab("テレポート")
 local GunTab = Window:CreateTab("武器強化")
+local InfJumpTab = Window:CreateTab("無限ジャンプ") -- 新規タブ
 
 --========================================
 -- 変数
@@ -21,6 +23,8 @@ local GunTab = Window:CreateTab("武器強化")
 local player = game.Players.LocalPlayer
 local cam = workspace.CurrentCamera
 local mouse = player:GetMouse()
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
 
 local AimbotEnabled = false
 local WallCheck = false
@@ -31,6 +35,8 @@ local Smoothness = 0.3
 
 local ESPEnabled = false
 local ESP3DEnabled = false
+
+local infJumpEnabled = false
 
 local ESPLabels = {}
 local Lines = {}
@@ -195,6 +201,92 @@ GunTab:CreateButton({
 })
 
 --========================================
+-- 無限ジャンプタブ
+--========================================
+InfJumpTab:CreateToggle({
+    Name = "無限ジャンプ GUI表示",
+    CurrentValue = false,
+    Callback = function(v)
+        if v then
+            -- GUI作成
+            if not player.PlayerGui:FindFirstChild("InfJumpGUI") then
+                local screenGui = Instance.new("ScreenGui")
+                screenGui.Name = "InfJumpGUI"
+                screenGui.ResetOnSpawn = false
+                screenGui.Parent = player:WaitForChild("PlayerGui")
+
+                local frame = Instance.new("Frame")
+                frame.Size = UDim2.new(0, 280, 0, 120)
+                frame.Position = UDim2.new(0.5, -140, 0, 30)
+                frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+                frame.BackgroundTransparency = 0.1
+                frame.BorderSizePixel = 0
+                frame.Active = true
+                frame.Draggable = true
+                frame.Parent = screenGui
+
+                local frameCorner = Instance.new("UICorner")
+                frameCorner.CornerRadius = UDim.new(0, 15)
+                frameCorner.Parent = frame
+
+                local border = Instance.new("UIStroke")
+                border.Parent = frame
+                border.Thickness = 4
+                border.LineJoinMode = Enum.LineJoinMode.Round
+                border.Color = Color3.fromHSV(0,1,1)
+
+                local title = Instance.new("TextLabel")
+                title.Size = UDim2.new(1, 0, 0, 35)
+                title.BackgroundTransparency = 1
+                title.Text = "🚀 無限ジャンプ"
+                title.TextColor3 = Color3.fromRGB(255, 255, 255)
+                title.Font = Enum.Font.GothamBold
+                title.TextSize = 18
+                title.Parent = frame
+
+                local infJumpBtn = Instance.new("TextButton")
+                infJumpBtn.Size = UDim2.new(0.9, 0, 0, 50)
+                infJumpBtn.Position = UDim2.new(0.05, 0, 0, 50)
+                infJumpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                infJumpBtn.Text = "無限ジャンプ: オフ"
+                infJumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                infJumpBtn.Font = Enum.Font.GothamBold
+                infJumpBtn.TextSize = 16
+                infJumpBtn.Parent = frame
+
+                local btnCorner = Instance.new("UICorner")
+                btnCorner.CornerRadius = UDim.new(0, 12)
+                btnCorner.Parent = infJumpBtn
+
+                -- ボタン押したらオンオフ切替
+                infJumpBtn.MouseButton1Click:Connect(function()
+                    infJumpEnabled = not infJumpEnabled
+                    if infJumpEnabled then
+                        infJumpBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 100)
+                        infJumpBtn.Text = "無限ジャンプ: オン ✓"
+                    else
+                        infJumpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+                        infJumpBtn.Text = "無限ジャンプ: オフ"
+                    end
+                end)
+
+                -- レインボーアニメーション
+                local RunService = game:GetService("RunService")
+                local hue = 0
+                RunService.Heartbeat:Connect(function(deltaTime)
+                    hue = (hue + deltaTime * 0.2) % 1
+                    border.Color = Color3.fromHSV(hue, 1, 1)
+                end)
+            end
+        else
+            local gui = player.PlayerGui:FindFirstChild("InfJumpGUI")
+            if gui then gui:Destroy() end
+            infJumpEnabled = false
+        end
+    end
+})
+
+--========================================
 -- メインループ
 --========================================
 game:GetService("RunService").RenderStepped:Connect(function()
@@ -271,7 +363,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
             if plr ~= player and plr.Team and plr.Team.Name == "Guards" then
                 if plr.Character and plr.Character:FindFirstChild(AimPart) then
                     local humanoid = plr.Character:FindFirstChild("Humanoid")
-                    if not humanoid or humanoid.Health <= 0 then continue end -- 死んだ人は無視
+                    if not humanoid or humanoid.Health <= 0 then continue end
                     local part = plr.Character[AimPart]
                     if not canSee(part) then continue end
                     local pos, visible = cam:WorldToViewportPoint(part.Position)
@@ -292,3 +384,17 @@ game:GetService("RunService").RenderStepped:Connect(function()
     end
 end)
 
+--========================================
+-- 無限ジャンプ処理
+--========================================
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if infJumpEnabled and humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- キャラクターリスポーン時
+player.CharacterAdded:Connect(function(newChar)
+    char = newChar
+    humanoid = char:WaitForChild("Humanoid")
+end)
