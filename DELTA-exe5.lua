@@ -23,7 +23,6 @@ local cam = workspace.CurrentCamera
 local mouse = player:GetMouse()
 
 local AimbotEnabled = false
-local AutoShotEnabled = false
 local WallCheck = false
 local FOV = 100
 local FOVFixed = false
@@ -57,7 +56,6 @@ Circle.Radius = FOV
 -- AIMBOT GUI
 --========================================
 AIMTab:CreateToggle({Name = "AIMBOT", CurrentValue = false, Callback = function(v) AimbotEnabled = v; Circle.Visible = v end})
-AIMTab:CreateToggle({Name = "AUTO SHOT（照準時に自動射撃）", CurrentValue = false, Callback = function(v) AutoShotEnabled = v end})
 AIMTab:CreateToggle({Name = "壁越しエイムしない（WallCheck）", CurrentValue = false, Callback = function(v) WallCheck = v end})
 AIMTab:CreateSlider({Name = "FOVサイズ", Range = {50, 500}, Increment = 5, CurrentValue = 100, Callback = function(v) FOV = v; Circle.Radius = v end})
 AIMTab:CreateToggle({Name = "FOV固定", CurrentValue = false, Callback = function(v) FOVFixed = v end})
@@ -140,16 +138,7 @@ local function getESPLabel(plr)
 end
 
 --========================================
--- AUTO SHOT
---========================================
-local function autoShoot()
-    mouse1press()
-    task.wait(0.05)
-    mouse1release()
-end
-
---========================================
--- 🔫 AK-47 無限弾 + リロード無効（統合版）
+-- 🔫 AK-47 無限弾 + リロード無効
 --========================================
 local function MakeAKInfinite(tool)
     if not tool then return end
@@ -241,6 +230,12 @@ game:GetService("RunService").RenderStepped:Connect(function()
                 if Lines[plr] then Lines[plr]:Remove(); Lines[plr]=nil end
                 continue
             end
+            local humanoid = plr.Character:FindFirstChild("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then
+                if ESPLabels[plr] then ESPLabels[plr].Visible = false end
+                if Lines[plr] then Lines[plr].Visible = false end
+                continue
+            end
             local part = plr.Character.HumanoidRootPart
             if not canSee(part) then
                 if ESPLabels[plr] then ESPLabels[plr].Visible = false end
@@ -275,6 +270,8 @@ game:GetService("RunService").RenderStepped:Connect(function()
         for _, plr in ipairs(game.Players:GetPlayers()) do
             if plr ~= player and plr.Team and plr.Team.Name == "Guards" then
                 if plr.Character and plr.Character:FindFirstChild(AimPart) then
+                    local humanoid = plr.Character:FindFirstChild("Humanoid")
+                    if not humanoid or humanoid.Health <= 0 then continue end -- 死んだ人は無視
                     local part = plr.Character[AimPart]
                     if not canSee(part) then continue end
                     local pos, visible = cam:WorldToViewportPoint(part.Position)
@@ -291,7 +288,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
         if nearest then
             local dir = (nearest.Position - cam.CFrame.Position).Unit
             cam.CFrame = cam.CFrame:Lerp(CFrame.new(cam.CFrame.Position, cam.CFrame.Position + dir), Smoothness)
-            if AutoShotEnabled then autoShoot() end
         end
     end
 end)
+
