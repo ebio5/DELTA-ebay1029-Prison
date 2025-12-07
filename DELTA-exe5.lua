@@ -61,7 +61,7 @@ local Circle = Drawing.new("Circle")
 Circle.Thickness = 2
 Circle.NumSides = 100
 Circle.Visible = false
-Circle.Radius = FOV
+Circle.Radius = FOV * (300/200) -- 修正：以前の比率に合わせる
 Circle.Filled = false
 
 --====================================================
@@ -92,7 +92,7 @@ AIMTab:CreateSlider({
     CurrentValue = 120,
     Callback = function(v)
         FOV = v
-        Circle.Radius = v
+        Circle.Radius = v * (300/200) -- 修正
     end
 })
 
@@ -249,6 +249,7 @@ game:GetService("RunService").RenderStepped:Connect(function()
     if AimbotEnabled then
         Circle.Color = rainbow()
         Circle.Position = Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)
+        Circle.Radius = FOV * (300/200) -- 描画比率
     end
 
     --===== AIMBOT =====--
