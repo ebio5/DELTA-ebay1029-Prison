@@ -337,3 +337,36 @@ player.CharacterAdded:Connect(function(new)
 char = new
 humanoid = new:WaitForChild("Humanoid")
 end)
+-- [[ Rayfield UI: Antiタブ & Anti-Kick実装 ]]
+
+local AntiTab = Window:CreateTab("Anti", 4483362458) -- アイコンIDは適当だぜ
+
+local antikickEnabled = false
+AntiTab:CreateToggle({
+   Name = "Anti-Kick (スクリプト保護)",
+   CurrentValue = false,
+   Flag = "AntiKickToggle",
+   Callback = function(Value)
+      antikickEnabled = Value
+      if antikickEnabled then
+          -- [[ Anti-Kickの核心ロジック ]]
+          local mt = getrawmetatable(game)
+          local old = mt.__namecall
+          setreadonly(mt, false)
+
+          mt.__namecall = newcclosure(function(self, ...)
+              local method = getnamecallmethod()
+              local args = {...}
+
+              -- Kick命令が飛んできたら無視する
+              if antikickEnabled and (method == "Kick" or method == "kick") then
+                  warn("サーバーまたはスクリプトからのKickをブロックしたぜ！")
+                  return nil
+              end
+
+              return old(self, unpack(args))
+          end)
+          setreadonly(mt, true)
+      end
+   end,
+})
